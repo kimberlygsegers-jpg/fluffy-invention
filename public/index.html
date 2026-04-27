@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sports & Nutrition Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🏋️ Sports & Nutrition Tracker</h1>
+      <div class="user-info">
+        <span id="greeting">Welcome!</span>
+      </div>
+    </header>
+
+    <main>
+      <!-- Tab Navigation -->
+      <nav class="tabs">
+        <button class="tab-btn" data-tab="calendar">📅 Calendar</button>
+        <button class="tab-btn" data-tab="nutrition">🥗 Smart Nutrition</button>
+        <button class="tab-btn active" data-tab="strength">💪 Log Workout</button>
+        <button class="tab-btn" data-tab="cardio">🏃 Cardio</button>
+        <button class="tab-btn" data-tab="progress">📊 Progress & Body</button>
+        <button class="tab-btn" data-tab="chat">💬 AI Chat</button>
+      </nav>
+
+      <!-- Calendar Tab -->
+      <div id="calendar" class="tab-content">
+        <div class="calendar-container">
+          <div class="calendar-header">
+            <button id="prevWeek" class="btn-secondary">← Previous Week</button>
+            <h2 id="weekTitle">This Week</h2>
+            <button id="nextWeek" class="btn-secondary">Next Week →</button>
+          </div>
+          <div id="calendarGrid" class="calendar-grid"></div>
+          
+          <!-- Quick Add Modal -->
+          <div id="quickAddModal" class="modal" style="display:none;">
+            <div class="modal-content">
+              <span class="close" id="closeModal">&times;</span>
+              <h3 id="modalTitle">Add Workout</h3>
+              <form id="quickAddForm">
+                <input type="hidden" id="quickAddDate">
+                <div class="form-group">
+                  <label>Workout Type:</label>
+                  <select id="quickWorkoutType" required>
+                    <option value="">Select type</option>
+                    <option value="strength">Strength Training</option>
+                    <option value="cardio">Cardio</option>
+                  </select>
+                </div>
+                <div id="quickAddFields"></div>
+                <button type="submit" class="btn-primary">Add Workout</button>
+              </form>
+            </div>
+          </div>
+          
+          <!-- Workout Details Modal -->
+          <div id="workoutDetailsModal" class="modal" style="display:none;">
+            <div class="modal-content modal-large">
+              <span class="close" id="closeDetailsModal">&times;</span>
+              <div id="workoutDetailsContent">
+                <h3 id="workoutDetailsTitle">Workout Details</h3>
+                <div id="workoutDetailsInfo"></div>
+                
+                <div class="workout-completion-section">
+                  <h4>Mark as Complete</h4>
+                  <div class="form-group">
+                    <label>Notes (optional):</label>
+                    <textarea id="completionNotes" rows="4" placeholder="How did the workout go? Any PRs or observations?"></textarea>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label>Exercises Completed (one per line, optional):</label>
+                    <textarea id="exercisesCompleted" rows="6" placeholder="Bench Press - 3x8 @ 80kg&#10;Incline Press - 3x10 @ 30kg"></textarea>
+                  </div>
+                  
+                  <div class="completion-actions">
+                    <button id="markDoneBtn" class="btn-primary">✓ Mark as Done</button>
+                    <button id="unmarkDoneBtn" class="btn-secondary" style="display:none;">↺ Unmark</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Tab -->
+      <div id="chat" class="tab-content">
+        <div class="chat-container">
+          <div id="chatMessages" class="chat-messages">
+            <div class="message bot-message">
+              <strong>AI Coach:</strong> Hi! I'm your sports nutrition and fitness coach. Ask me about workouts, nutrition, or anything fitness-related!
+              <br><br>
+              <em style="color: #888; font-size: 0.9em;">Note: If AI chat is unavailable, all other features (workout logging, nutrition tracking, schedules) still work perfectly!</em>
+            </div>
+          </div>
+          <div class="chat-input-container">
+            <input 
+              type="text" 
+              id="chatInput" 
+              placeholder="Ask about nutrition, workouts, or log your activities..."
+              autocomplete="off"
+            >
+            <button id="sendBtn" class="btn-primary">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Strength Training Tab -->
+      <div id="strength" class="tab-content active">
+        <div class="form-container">
+          <h2>Log Strength Training</h2>
+          <form id="strengthForm">
+            <div class="form-group">
+              <label for="exerciseName">Exercise:</label>
+              <input type="text" id="exerciseName" placeholder="e.g., Bench Press, Squat" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="weight">Weight (kg):</label>
+                <input type="number" id="weight" step="0.5" min="0" required>
+              </div>
+              <div class="form-group">
+                <label for="reps">Reps:</label>
+                <input type="number" id="reps" min="1" required>
+              </div>
+              <div class="form-group">
+                <label for="sets">Sets:</label>
+                <input type="number" id="sets" min="1" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="strengthNotes">Notes (optional):</label>
+              <textarea id="strengthNotes" rows="2" placeholder="How did it feel?"></textarea>
+            </div>
+            <button type="submit" class="btn-primary">Log Workout</button>
+          </form>
+          <div id="strengthResult" class="result-message"></div>
+        </div>
+      </div>
+
+      <!-- Cardio Tab -->
+      <div id="cardio" class="tab-content">
+        <div class="form-container">
+          <h2>Log Cardio Activity</h2>
+          <form id="cardioForm">
+            <div class="form-group">
+              <label for="activityType">Activity:</label>
+              <select id="activityType" required>
+                <option value="">Select activity</option>
+                <option value="cycling">Cycling</option>
+                <option value="swimming">Swimming</option>
+                <option value="running">Running</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="duration">Duration (minutes):</label>
+                <input type="number" id="duration" min="1" required>
+              </div>
+              <div class="form-group">
+                <label for="distance">Distance (km):</label>
+                <input type="number" id="distance" step="0.1" min="0">
+              </div>
+              <div class="form-group">
+                <label for="calories">Calories:</label>
+                <input type="number" id="calories" min="0">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="cardioNotes">Notes (optional):</label>
+              <textarea id="cardioNotes" rows="2" placeholder="How was your session?"></textarea>
+            </div>
+            <button type="submit" class="btn-primary">Log Activity</button>
+          </form>
+          <div id="cardioResult" class="result-message"></div>
+        </div>
+      </div>
+
+      <!-- Smart Nutrition Tab -->
+      <div id="nutrition" class="tab-content">
+        <div class="nutrition-smart-container">
+          <h2>🥗 Today's Nutrition Plan</h2>
+          <div id="nutritionRecommendations" class="nutrition-recommendations">
+            <p>Loading recommendations...</p>
+          </div>
+          
+          <h3 style="margin-top: 30px;">Log Your Meals</h3>
+        </div>
+        <div class="form-container">
+          <h2>Log Nutrition</h2>
+          <form id="nutritionForm">
+            <div class="form-group">
+              <label for="mealType">Meal Type:</label>
+              <select id="mealType" required>
+                <option value="">Select meal</option>
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch">Lunch</option>
+                <option value="dinner">Dinner</option>
+                <option value="snack">Snack</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="foodItem">Food Item:</label>
+              <input type="text" id="foodItem" placeholder="e.g., Chicken breast, Brown rice" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="nutritionCalories">Calories:</label>
+                <input type="number" id="nutritionCalories" min="0">
+              </div>
+              <div class="form-group">
+                <label for="protein">Protein (g):</label>
+                <input type="number" id="protein" step="0.1" min="0">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="carbs">Carbs (g):</label>
+                <input type="number" id="carbs" step="0.1" min="0">
+              </div>
+              <div class="form-group">
+                <label for="fats">Fats (g):</label>
+                <input type="number" id="fats" step="0.1" min="0">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="nutritionNotes">Notes (optional):</label>
+              <textarea id="nutritionNotes" rows="2"></textarea>
+            </div>
+            <button type="submit" class="btn-primary">Log Meal</button>
+          </form>
+          <div id="nutritionResult" class="result-message"></div>
+          
+          <div id="dailySummary" class="daily-summary">
+            <h3>Today's Summary</h3>
+            <div id="summaryContent">
+              <p>No meals logged yet today.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weekly Schedule Tab (hidden, keeping for reference) -->
+      <div id="schedule" class="tab-content" style="display:none;">
+        <div class="form-container">
+          <h2>Training Schedule</h2>
+          <form id="scheduleForm">
+            <div class="form-group">
+              <label for="dayOfWeek">Day:</label>
+              <select id="dayOfWeek" required>
+                <option value="">Select day</option>
+                <option value="monday">Monday</option>
+                <option value="tuesday">Tuesday</option>
+                <option value="wednesday">Wednesday</option>
+                <option value="thursday">Thursday</option>
+                <option value="friday">Friday</option>
+                <option value="saturday">Saturday</option>
+                <option value="sunday">Sunday</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="workoutType">Workout Type:</label>
+              <input type="text" id="workoutType" placeholder="e.g., Upper Body, Legs, Cardio" required>
+            </div>
+            <div class="form-group">
+              <label for="scheduleExercises">Exercises (one per line):</label>
+              <textarea id="scheduleExercises" rows="5" placeholder="Bench Press&#10;Shoulder Press&#10;Tricep Dips"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="scheduleNotes">Notes:</label>
+              <textarea id="scheduleNotes" rows="2"></textarea>
+            </div>
+            <button type="submit" class="btn-primary">Save Schedule</button>
+          </form>
+          <div id="scheduleResult" class="result-message"></div>
+          
+          <div id="weeklySchedule" class="weekly-schedule">
+            <h3>Your Weekly Schedule</h3>
+            <div id="scheduleList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress & Body Measurements Tab -->
+      <div id="progress" class="tab-content">
+        <div class="progress-container">
+          <h2>📊 Body Measurements & Progress</h2>
+          
+          <!-- Add Measurement Form -->
+          <div class="measurement-form">
+            <h3>Log Today's Measurements</h3>
+            <form id="measurementForm">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="measurementDate">Date:</label>
+                  <input type="date" id="measurementDate" required>
+                </div>
+                <div class="form-group">
+                  <label for="bodyWeight">Weight (kg):</label>
+                  <input type="number" id="bodyWeight" step="0.1" min="0">
+                </div>
+                <div class="form-group">
+                  <label for="bodyFat">Body Fat %:</label>
+                  <input type="number" id="bodyFat" step="0.1" min="0" max="100">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="chest">Chest (cm):</label>
+                  <input type="number" id="chest" step="0.1" min="0">
+                </div>
+                <div class="form-group">
+                  <label for="waist">Waist (cm):</label>
+                  <input type="number" id="waist" step="0.1" min="0">
+                </div>
+                <div class="form-group">
+                  <label for="hips">Hips (cm):</label>
+                  <input type="number" id="hips" step="0.1" min="0">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="biceps">Biceps (cm):</label>
+                  <input type="number" id="biceps" step="0.1" min="0">
+                </div>
+                <div class="form-group">
+                  <label for="thighs">Thighs (cm):</label>
+                  <input type="number" id="thighs" step="0.1" min="0">
+                </div>
+                <div class="form-group">
+                  <label for="calves">Calves (cm):</label>
+                  <input type="number" id="calves" step="0.1" min="0">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="measurementNotes">Notes:</label>
+                <textarea id="measurementNotes" rows="2" placeholder="How are you feeling?"></textarea>
+              </div>
+              <button type="submit" class="btn-primary">Save Measurements</button>
+            </form>
+            <div id="measurementResult" class="result-message"></div>
+          </div>
+          
+          <!-- Progress Charts -->
+          <div class="progress-charts">
+            <h3>Your Progress</h3>
+            <div class="chart-controls">
+              <label>Time Period:</label>
+              <select id="chartPeriod">
+                <option value="30">Last 30 Days</option>
+                <option value="60">Last 60 Days</option>
+                <option value="90" selected>Last 90 Days</option>
+                <option value="180">Last 6 Months</option>
+              </select>
+              <button id="refreshCharts" class="btn-secondary">Refresh</button>
+            </div>
+            <div id="progressCharts"></div>
+          </div>
+          
+          <!-- Workout Progress -->
+          <div class="workout-progress">
+            <h3>Exercise Progress</h3>
+            <div class="form-group">
+              <label for="progressExercise">Select Exercise:</label>
+              <input type="text" id="progressExercise" placeholder="e.g., Bench Press">
+              <button id="loadProgressBtn" class="btn-primary">Load Progress</button>
+            </div>
+            <div id="progressChart" class="progress-chart"></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
