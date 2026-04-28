@@ -187,20 +187,10 @@ async function loadCalendar() {
       // Make entire day card clickable if there's a scheduled workout
       if (schedule) {
         dayCard.style.cursor = 'pointer';
-        dayCard.addEventListener('click', (e) => {
-          // Don't trigger if clicking the "Add Extra" button
-          if (!e.target.classList.contains('add-extra-btn') && !e.target.closest('.add-extra-btn')) {
-            openWorkoutDetails(schedule, dateStr, completion);
-          }
+        dayCard.addEventListener('click', () => {
+          openWorkoutDetails(schedule, dateStr, completion);
         });
       }
-      
-      // Add click handler for Add Extra button
-      const addBtn = dayCard.querySelector('.add-extra-btn');
-      addBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openQuickAddModal(dayDate, day);
-      });
       
       calendarGrid.appendChild(dayCard);
     });
