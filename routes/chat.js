@@ -2,9 +2,13 @@ const express = require('express');
 const router = express.Router();
 const OpenAI = require('openai');
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI only if API key is available
+let openai = null;
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 // Chat with AI for food consultation and general fitness advice
 router.post('/', async (req, res) => {
@@ -13,6 +17,13 @@ router.post('/', async (req, res) => {
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
+    }
+
+    // Check if OpenAI is configured
+    if (!openai) {
+      return res.status(503).json({ 
+        error: 'AI chat is currently unavailable. Please add your OpenAI API key to enable this feature.' 
+      });
     }
 
     // Build conversation context
