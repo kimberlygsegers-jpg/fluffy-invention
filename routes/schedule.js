@@ -74,8 +74,9 @@ router.get('/:userId', async (req, res) => {
     res.json({ schedule: result.rows });
 
   } catch (error) {
-    console.error('Error fetching schedule:', error);
-    res.status(500).json({ error: 'Failed to fetch schedule' });
+    console.error('❌ Error fetching schedule:', error.message);
+    console.error('Full error:', error);
+    res.status(500).json({ error: 'Failed to fetch schedule', details: error.message });
   }
 });
 

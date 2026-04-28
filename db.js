@@ -6,6 +6,11 @@ dotenv.config();
 
 // Database connection pool
 // Support both DATABASE_URL (production) and individual params (local development)
+console.log('🔍 DATABASE CONFIG:');
+console.log('  DATABASE_URL exists:', !!process.env.DATABASE_URL);
+console.log('  NODE_ENV:', process.env.NODE_ENV);
+console.log('  Using DATABASE_URL:', !!process.env.DATABASE_URL);
+
 const pool = new Pool(
   process.env.DATABASE_URL
     ? {
@@ -20,5 +25,10 @@ const pool = new Pool(
         port: process.env.DB_PORT || 5432,
       }
 );
+
+// Test connection on startup
+pool.query('SELECT NOW()')
+  .then(() => console.log('✅ Database connected successfully'))
+  .catch(err => console.error('❌ Database connection failed:', err.message));
 
 module.exports = { pool };
