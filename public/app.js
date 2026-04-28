@@ -11,26 +11,57 @@ let conversationHistory = [];
 
 // Calendar state
 let currentWeekOffset = 0;
+let selectedDayElement = null;
 const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 // Get workout icon and color based on type
 function getWorkoutIcon(workoutType) {
   const type = workoutType.toLowerCase();
+  
+  // Return SVG icon markup
   if (type.includes('strength') || type.includes('upper') || type.includes('lower') || type.includes('push') || type.includes('pull') || type.includes('legs')) {
-    return { icon: '●', color: '#DC2626', label: 'Strength' }; // Strong Red
+    return { 
+      icon: '<svg viewBox="0 0 20 20" fill="none"><path d="M4 7H6M6 7V13M6 7L8 5M6 13H4M6 13L8 15M16 7H14M14 7V13M14 7L12 5M14 13H16M14 13L12 15M8 10H12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', 
+      color: '#DC2626', 
+      label: 'Strength' 
+    };
   } else if (type.includes('cardio') || type.includes('running') || type.includes('run')) {
-    return { icon: '●', color: '#2563EB', label: 'Cardio' }; // Strong Blue
+    return { 
+      icon: '<svg viewBox="0 0 20 20" fill="none"><path d="M6 4L10 8M10 8L14 4M10 8V16M4 10L8 14M16 10L12 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', 
+      color: '#2563EB', 
+      label: 'Cardio' 
+    };
   } else if (type.includes('cycling') || type.includes('bike')) {
-    return { icon: '●', color: '#7C3AED', label: 'Cycling' }; // Strong Purple
+    return { 
+      icon: '<svg viewBox="0 0 20 20" fill="none"><circle cx="5" cy="14" r="3" stroke="currentColor" stroke-width="1.5"/><circle cx="15" cy="14" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M8 14L11 7H13L15 14M7 7H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>', 
+      color: '#7C3AED', 
+      label: 'Cycling' 
+    };
   } else if (type.includes('swimming') || type.includes('swim')) {
-    return { icon: '●', color: '#0891B2', label: 'Swimming' }; // Strong Cyan
+    return { 
+      icon: '<svg viewBox="0 0 20 20" fill="none"><path d="M2 11C2 11 3 9 5 9C7 9 8 11 10 11C12 11 13 9 15 9C17 9 18 11 18 11M2 15C2 15 3 13 5 13C7 13 8 15 10 15C12 15 13 13 15 13C17 13 18 15 18 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="13" cy="6" r="2" stroke="currentColor" stroke-width="1.5"/></svg>', 
+      color: '#0891B2', 
+      label: 'Swimming' 
+    };
   } else if (type.includes('yoga') || type.includes('stretch')) {
-    return { icon: '●', color: '#059669', label: 'Yoga' }; // Strong Green
+    return { 
+      icon: '<svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="4" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M10 6V10M10 10L6 14M10 10L14 14M10 10L6 8M10 10L14 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>', 
+      color: '#059669', 
+      label: 'Yoga' 
+    };
   } else if (type.includes('rest')) {
-    return { icon: '●', color: '#6B7280', label: 'Rest' }; // Gray
+    return { 
+      icon: '<svg viewBox="0 0 20 20" fill="none"><path d="M10 5V10H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="10" r="6" stroke="currentColor" stroke-width="1.5"/></svg>', 
+      color: '#6B7280', 
+      label: 'Rest' 
+    };
   } else {
-    return { icon: '●', color: '#EA580C', label: 'Workout' }; // Strong Orange
+    return { 
+      icon: '<svg viewBox="0 0 20 20" fill="none"><path d="M10 3L12 8H17L13 11L15 17L10 13L5 17L7 11L3 8H8L10 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>', 
+      color: '#EA580C', 
+      label: 'Workout' 
+    };
   }
 }
 
@@ -50,8 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Tab Navigation
 function initializeTabs() {
-  const tabButtons = document.querySelectorAll('.tab-btn');
-  const tabContents = document.querySelectorAll('.tab-content');
+  const tabButtons = document.querySelectorAll('.nav-item');
+  const tabContents = document.querySelectorAll('.view');
 
   tabButtons.forEach(button => {
     button.addEventListener('click', () => {
@@ -117,6 +148,11 @@ function initializeCalendar() {
   // Close workout details section (below calendar)
   document.getElementById('closeDetailsBtn').addEventListener('click', () => {
     document.getElementById('workoutDetailsSection').style.display = 'none';
+    // Clear selected state
+    if (selectedDayElement) {
+      selectedDayElement.classList.remove('selected');
+      selectedDayElement = null;
+    }
   });
   
   // Quick add form
@@ -146,7 +182,10 @@ async function loadCalendar() {
     // Calculate week dates
     const today = new Date();
     const startDate = new Date(today);
-    startDate.setDate(today.getDate() + (currentWeekOffset * 7) - today.getDay() + 1);
+    // Get Monday of the week (handle Sunday as day 7 instead of 0)
+    const dayOfWeek = today.getDay();
+    const daysFromMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    startDate.setDate(today.getDate() + (currentWeekOffset * 7) + daysFromMonday);
     
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + 6);
@@ -172,6 +211,9 @@ async function loadCalendar() {
     
     // Build calendar grid
     calendarGrid.innerHTML = '';
+    
+    // Clear selected state when changing weeks
+    selectedDayElement = null;
     
     daysOfWeek.forEach((day, index) => {
       const dayDate = new Date(startDate);
@@ -214,6 +256,14 @@ async function loadCalendar() {
       if (schedule) {
         dayCard.style.cursor = 'pointer';
         dayCard.addEventListener('click', () => {
+          // Remove selected class from previously selected day
+          if (selectedDayElement) {
+            selectedDayElement.classList.remove('selected');
+          }
+          // Add selected class to clicked day
+          dayCard.classList.add('selected');
+          selectedDayElement = dayCard;
+          
           openWorkoutDetails(schedule, dateStr, completion);
         });
       }
@@ -371,7 +421,7 @@ function openWorkoutDetails(schedule, date, completion) {
   const dateObj = new Date(date);
   const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
   const workoutInfo = getWorkoutIcon(schedule.workout_type);
-  title.innerHTML = `<span style="color: ${workoutInfo.color}; font-size: 1.5rem;">${workoutInfo.icon}</span> ${schedule.workout_type} - ${dayName}`;
+  title.innerHTML = `<span class="workout-icon" style="color: ${workoutInfo.color}; display: inline-flex; width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;">${workoutInfo.icon}</span> ${schedule.workout_type} - ${dayName}`;
   
   // Set checkbox state
   checkbox.checked = !!completion;
@@ -470,12 +520,21 @@ async function handleCompletionToggle(e) {
 async function loadSmartNutrition() {
   const container = document.getElementById('nutritionRecommendations');
   
+  // Show loading state
+  container.innerHTML = '<div class="skeleton" style="height: 150px;"></div>';
+  
   try {
     const response = await fetch(`${API_BASE_URL}/nutrition-recommendations/recommendations/${USER_ID}`);
     const data = await response.json();
     
     if (!data.workoutType && !data.hasTraining) {
-      container.innerHTML = '<p>No training scheduled for today - it\'s a rest day! Focus on recovery nutrition.</p>';
+      container.innerHTML = `
+        <div class="nutrition-workout-info" style="text-align: center; padding: 24px;">
+          <div style="font-size: 32px; margin-bottom: 12px;">🧘</div>
+          <h3 style="margin-bottom: 8px; font-size: 16px; font-weight: 600;">Rest Day</h3>
+          <p style="margin: 0; color: var(--gray-600); font-size: 14px;">No training scheduled today. Focus on recovery and maintenance nutrition.</p>
+        </div>
+      `;
       return;
     }
     
@@ -558,19 +617,36 @@ async function loadSmartNutrition() {
 
 // ===== BODY MEASUREMENTS & PROGRESS =====
 async function loadBodyMeasurements() {
+  const chartsDiv = document.getElementById('progressCharts');
+  
+  // Show loading state
+  chartsDiv.innerHTML = '<div class="skeleton" style="height: 200px; margin-bottom: 16px;"></div>';
+  
   try {
     const response = await fetch(`${API_BASE_URL}/measurements/progress/${USER_ID}`);
     const data = await response.json();
     
     if (!data.measurements || data.measurements.length === 0) {
-      document.getElementById('progressCharts').innerHTML = '<p>No measurements recorded yet. Log your first measurement above!</p>';
+      chartsDiv.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📊</div>
+          <div class="empty-state-title">No measurements yet</div>
+          <div class="empty-state-text">Start tracking your progress by logging your first measurement above. You'll see charts here once you have data.</div>
+        </div>
+      `;
       return;
     }
     
     renderProgressCharts(data);
   } catch (error) {
     console.error('Error loading measurements:', error);
-    document.getElementById('progressCharts').innerHTML = '<p>Failed to load progress data</p>';
+    chartsDiv.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">⚠️</div>
+        <div class="empty-state-title">Failed to load data</div>
+        <div class="empty-state-text">There was an error loading your progress data. Please try again.</div>
+      </div>
+    `;
   }
 }
 
@@ -744,13 +820,30 @@ async function sendMessage() {
 function addMessageToChat(message, sender) {
   const chatMessages = document.getElementById('chatMessages');
   const messageDiv = document.createElement('div');
-  messageDiv.className = `message ${sender === 'user' ? 'user-message' : 'bot-message'}`;
+  messageDiv.className = `chat-message chat-message-${sender}`;
   
-  if (sender === 'bot') {
-    messageDiv.innerHTML = `<strong>AI Coach:</strong> ${message}`;
-  } else {
-    messageDiv.innerHTML = `<strong>You:</strong> ${message}`;
-  }
+  const isAI = sender === 'bot' || sender === 'ai';
+  
+  messageDiv.innerHTML = `
+    <div class="chat-avatar">
+      ${isAI ? `
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="10" r="8" fill="#3B82F6"/>
+          <path d="M7 9C7.55228 9 8 8.55228 8 8C8 7.44772 7.55228 7 7 7C6.44772 7 6 7.44772 6 8C6 8.55228 6.44772 9 7 9Z" fill="white"/>
+          <path d="M13 9C13.5523 9 14 8.55228 14 8C14 7.44772 13.5523 7 13 7C12.4477 7 12 7.44772 12 8C12 8.55228 12.4477 9 13 9Z" fill="white"/>
+          <path d="M7 12C7 12 8 14 10 14C12 14 13 12 13 12" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      ` : `
+        <div class="user-avatar">
+          <span>K</span>
+        </div>
+      `}
+    </div>
+    <div class="chat-content">
+      <div class="chat-author">${isAI ? 'AI Coach' : 'You'}</div>
+      <div class="chat-text">${message}</div>
+    </div>
+  `;
   
   chatMessages.appendChild(messageDiv);
   chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -876,23 +969,22 @@ function showResultMessage(elementId, message, type) {
 
 function showMessage(message, type) {
   const messageDiv = document.createElement('div');
+  messageDiv.className = `result-message ${type}`;
   messageDiv.textContent = message;
   messageDiv.style.cssText = `
     position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 15px 20px;
-    background: ${type === 'success' ? '#4CAF50' : '#f44336'};
-    color: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    top: 24px;
+    right: 24px;
+    min-width: 300px;
+    max-width: 500px;
     z-index: 10000;
-    animation: slideIn 0.3s ease;
+    box-shadow: var(--shadow-lg);
   `;
   document.body.appendChild(messageDiv);
   
   setTimeout(() => {
-    messageDiv.remove();
+    messageDiv.style.animation = 'fadeOut 0.3s ease-out';
+    setTimeout(() => messageDiv.remove(), 300);
   }, 3000);
 }
 
@@ -934,7 +1026,13 @@ async function loadTodaysSummary() {
 
       summaryDiv.innerHTML = html;
     } else {
-      summaryDiv.innerHTML = '<p>No meals logged yet today.</p>';
+      summaryDiv.innerHTML = `
+        <div class="empty-state" style="padding: 40px 24px;">
+          <div class="empty-state-icon">🍽️</div>
+          <div class="empty-state-title">No meals logged today</div>
+          <div class="empty-state-text">Start tracking your nutrition by logging your first meal above.</div>
+        </div>
+      `;
     }
   } catch (error) {
     console.error('Error loading today\'s summary:', error);
