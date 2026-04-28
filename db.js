@@ -14,9 +14,9 @@ console.log('  Using DATABASE_URL:', !!process.env.DATABASE_URL);
 const pool = new Pool(
   process.env.DATABASE_URL
     ? {
-        // Use Supabase connection pooler (port 6543) for better serverless compatibility
-        user: 'postgres',
-        host: 'db.vvjkpfyleoiamuxhbyyy.supabase.co',
+        // Use Supabase IPv4-compatible session pooler
+        user: 'postgres.vvjkpfyleoiamuxhbyyy',
+        host: 'aws-0-eu-west-1.pooler.supabase.com',
         database: 'postgres',
         password: 'Groenendaeler1!',
         port: 6543,
