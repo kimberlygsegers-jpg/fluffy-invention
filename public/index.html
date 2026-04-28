@@ -20,7 +20,6 @@
       <nav class="tabs">
         <button class="tab-btn active" data-tab="calendar">📅 Calendar</button>
         <button class="tab-btn" data-tab="nutrition">🥗 Smart Nutrition</button>
-        <button class="tab-btn" data-tab="cardio">🏃 Cardio</button>
         <button class="tab-btn" data-tab="progress">📊 Progress & Body</button>
         <button class="tab-btn" data-tab="chat">💬 AI Chat</button>
       </nav>
@@ -38,27 +37,15 @@
           <!-- Workout Details Section (below calendar) -->
           <div id="workoutDetailsSection" class="workout-details-section" style="display:none;">
             <div class="workout-details-card">
-              <h3 id="selectedDayTitle">Workout Details</h3>
-              <div id="selectedDayContent"></div>
-              
-              <div class="workout-completion-section">
-                <h4>Mark as Complete</h4>
-                <div class="form-group">
-                  <label>Notes (optional):</label>
-                  <textarea id="completionNotes" rows="4" placeholder="How did the workout go? Any PRs or observations?"></textarea>
-                </div>
-                
-                <div class="form-group">
-                  <label>Exercises Completed (one per line, optional):</label>
-                  <textarea id="exercisesCompleted" rows="6" placeholder="Bench Press - 3x8 @ 80kg&#10;Incline Press - 3x10 @ 30kg"></textarea>
-                </div>
-                
-                <div class="completion-actions">
-                  <button id="markDoneBtn" class="btn-primary">✓ Mark as Done</button>
-                  <button id="unmarkDoneBtn" class="btn-secondary" style="display:none;">↺ Unmark</button>
-                  <button id="closeDetailsBtn" class="btn-secondary">Close</button>
-                </div>
+              <div class="workout-title-bar">
+                <h3 id="selectedDayTitle">Workout Details</h3>
+                <label class="completion-checkbox">
+                  <input type="checkbox" id="completionCheckbox">
+                  <span>Mark as Complete</span>
+                </label>
               </div>
+              <div id="selectedDayContent"></div>
+              <button id="closeDetailsBtn" class="btn-secondary">Close</button>
             </div>
           </div>
           
@@ -137,45 +124,6 @@
       </div>
 
 
-
-      <!-- Cardio Tab -->
-      <div id="cardio" class="tab-content">
-        <div class="form-container">
-          <h2>Log Cardio Activity</h2>
-          <form id="cardioForm">
-            <div class="form-group">
-              <label for="activityType">Activity:</label>
-              <select id="activityType" required>
-                <option value="">Select activity</option>
-                <option value="cycling">Cycling</option>
-                <option value="swimming">Swimming</option>
-                <option value="running">Running</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="duration">Duration (minutes):</label>
-                <input type="number" id="duration" min="1" required>
-              </div>
-              <div class="form-group">
-                <label for="distance">Distance (km):</label>
-                <input type="number" id="distance" step="0.1" min="0">
-              </div>
-              <div class="form-group">
-                <label for="calories">Calories:</label>
-                <input type="number" id="calories" min="0">
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="cardioNotes">Notes (optional):</label>
-              <textarea id="cardioNotes" rows="2" placeholder="How was your session?"></textarea>
-            </div>
-            <button type="submit" class="btn-primary">Log Activity</button>
-          </form>
-          <div id="cardioResult" class="result-message"></div>
-        </div>
-      </div>
 
       <!-- Smart Nutrition Tab -->
       <div id="nutrition" class="tab-content">

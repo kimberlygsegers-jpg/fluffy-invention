@@ -14,6 +14,26 @@ let currentWeekOffset = 0;
 const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+// Get workout icon and color based on type
+function getWorkoutIcon(workoutType) {
+  const type = workoutType.toLowerCase();
+  if (type.includes('strength') || type.includes('upper') || type.includes('lower') || type.includes('push') || type.includes('pull') || type.includes('legs')) {
+    return { icon: '●', color: '#DC2626', label: 'Strength' }; // Strong Red
+  } else if (type.includes('cardio') || type.includes('running') || type.includes('run')) {
+    return { icon: '●', color: '#2563EB', label: 'Cardio' }; // Strong Blue
+  } else if (type.includes('cycling') || type.includes('bike')) {
+    return { icon: '●', color: '#7C3AED', label: 'Cycling' }; // Strong Purple
+  } else if (type.includes('swimming') || type.includes('swim')) {
+    return { icon: '●', color: '#0891B2', label: 'Swimming' }; // Strong Cyan
+  } else if (type.includes('yoga') || type.includes('stretch')) {
+    return { icon: '●', color: '#059669', label: 'Yoga' }; // Strong Green
+  } else if (type.includes('rest')) {
+    return { icon: '●', color: '#6B7280', label: 'Rest' }; // Gray
+  } else {
+    return { icon: '●', color: '#EA580C', label: 'Workout' }; // Strong Orange
+  }
+}
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
   initializeTabs();
@@ -108,11 +128,8 @@ function initializeCalendar() {
     renderQuickAddFields(type);
   });
   
-  // Mark done button
-  document.getElementById('markDoneBtn').addEventListener('click', handleMarkDone);
-  
-  // Unmark button
-  document.getElementById('unmarkDoneBtn').addEventListener('click', handleUnmarkDone);
+  // Completion checkbox
+  document.getElementById('completionCheckbox').addEventListener('change', handleCompletionToggle);
   
   loadCalendar();
 }
@@ -173,16 +190,25 @@ async function loadCalendar() {
       const dayCard = document.createElement('div');
       dayCard.className = `calendar-day ${schedule ? 'has-workout' : ''} ${completion ? 'completed' : ''} ${isToday ? 'today' : ''}`;
       
-      dayCard.innerHTML = `
+      let content = `
         <div class="day-header">${dayLabels[index]}</div>
         <div class="day-date">${dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
-        ${schedule ? `
-          <div class="day-indicator ${completion ? 'completed' : ''}">
-            <div class="indicator-dot"></div>
-            <span>${schedule.workout_type}</span>
-          </div>
-        ` : '<p class="rest-day-text">Rest</p>'}
       `;
+      
+      if (schedule) {
+        const workoutInfo = getWorkoutIcon(schedule.workout_type);
+        content += `
+          <div class="day-indicator ${completion ? 'completed' : ''}" style="border-left: 3px solid ${workoutInfo.color}">
+            <span class="workout-icon" style="color: ${workoutInfo.color}">${workoutInfo.icon}</span>
+            <span>${schedule.workout_type}</span>
+            ${completion ? '<span class="completion-badge">✓</span>' : ''}
+          </div>
+        `;
+      } else {
+        content += '<p class="rest-day-text">Rest Day</p>';
+      }
+      
+      dayCard.innerHTML = content;
       
       // Make entire day card clickable if there's a scheduled workout
       if (schedule) {
@@ -334,10 +360,7 @@ function openWorkoutDetails(schedule, date, completion) {
   const section = document.getElementById('workoutDetailsSection');
   const title = document.getElementById('selectedDayTitle');
   const content = document.getElementById('selectedDayContent');
-  const notesField = document.getElementById('completionNotes');
-  const exercisesField = document.getElementById('exercisesCompleted');
-  const markBtn = document.getElementById('markDoneBtn');
-  const unmarkBtn = document.getElementById('unmarkDoneBtn');
+  const checkbox = document.getElementById('completionCheckbox');
   
   // Parse exercises
   const exercises = Array.isArray(schedule.exercises) 
@@ -347,7 +370,11 @@ function openWorkoutDetails(schedule, date, completion) {
   // Set title
   const dateObj = new Date(date);
   const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-  title.textContent = `${schedule.workout_type} - ${dayName}`;
+  const workoutInfo = getWorkoutIcon(schedule.workout_type);
+  title.innerHTML = `<span style="color: ${workoutInfo.color}; font-size: 1.5rem;">${workoutInfo.icon}</span> ${schedule.workout_type} - ${dayName}`;
+  
+  // Set checkbox state
+  checkbox.checked = !!completion;
   
   // Build content
   let html = `
@@ -362,38 +389,12 @@ function openWorkoutDetails(schedule, date, completion) {
   
   if (completion) {
     html += `
-      <div class="workout-details-box" style="background: #e8f5e9;">
-        <h4 style="color: #4CAF50;">✓ Completed</h4>
+      <div class="workout-details-box" style="background: #ECFDF5;">
+        <h4 style="color: #10B981;">✓ Completed</h4>
         <p><strong>Completed at:</strong> ${new Date(completion.completed_at).toLocaleString()}</p>
         ${completion.notes ? `<p style="margin-top: 10px;"><strong>Your notes:</strong> ${completion.notes}</p>` : ''}
-        ${completion.exercises_completed ? `
-          <div style="margin-top: 10px;">
-            <strong>Exercises completed:</strong>
-            <ul style="margin-top: 5px;">
-              ${JSON.parse(completion.exercises_completed).map(ex => `<li>${ex}</li>`).join('')}
-            </ul>
-          </div>
-        ` : ''}
       </div>
     `;
-    
-    // Pre-fill form with existing completion data
-    notesField.value = completion.notes || '';
-    exercisesField.value = completion.exercises_completed 
-      ? JSON.parse(completion.exercises_completed).join('\n')
-      : '';
-    
-    markBtn.textContent = '✓ Update Completion';
-    markBtn.style.display = 'inline-block';
-    unmarkBtn.style.display = 'inline-block';
-  } else {
-    // Clear form for new completion
-    notesField.value = '';
-    exercisesField.value = exercises.join('\n');
-    
-    markBtn.textContent = '✓ Mark as Done';
-    markBtn.style.display = 'inline-block';
-    unmarkBtn.style.display = 'none';
   }
   
   content.innerHTML = html;
@@ -404,63 +405,64 @@ function openWorkoutDetails(schedule, date, completion) {
 }
 
 // Handle marking workout as done
-async function handleMarkDone() {
+// Handle completion toggle
+async function handleCompletionToggle(e) {
   if (!currentWorkoutData) return;
   
-  const notes = document.getElementById('completionNotes').value;
-  const exercisesText = document.getElementById('exercisesCompleted').value;
-  const exercises = exercisesText.split('\n').filter(ex => ex.trim());
+  const isChecked = e.target.checked;
   
-  try {
-    const response = await fetch(`${API_BASE_URL}/workout-completions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: USER_ID,
-        schedule_id: currentWorkoutData.schedule.id,
-        completion_date: currentWorkoutData.date,
-        notes: notes,
-        exercises_completed: exercises
-      })
-    });
-    
-    if (response.ok) {
-      document.getElementById('workoutDetailsSection').style.display = 'none';
-      showMessage('Workout marked as complete! 🎉', 'success');
-      loadCalendar();
-    } else {
-      throw new Error('Failed to mark workout complete');
+  if (isChecked) {
+    // Mark as done
+    try {
+      const response = await fetch(`${API_BASE_URL}/workout-completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: USER_ID,
+          schedule_id: currentWorkoutData.schedule.id,
+          completion_date: currentWorkoutData.date,
+          notes: '',
+          exercises_completed: []
+        })
+      });
+      
+      if (response.ok) {
+        showMessage('Workout marked as complete! 🎉', 'success');
+        loadCalendar();
+      } else {
+        throw new Error('Failed to mark workout complete');
+      }
+    } catch (error) {
+      console.error('Error marking workout complete:', error);
+      showMessage('Failed to mark workout complete', 'error');
+      e.target.checked = false; // Revert checkbox
     }
-  } catch (error) {
-    console.error('Error marking workout complete:', error);
-    showMessage('Failed to mark workout complete', 'error');
-  }
-}
-
-// Handle unmarking workout
-async function handleUnmarkDone() {
-  if (!currentWorkoutData || !currentWorkoutData.completion) return;
-  
-  if (!confirm('Are you sure you want to unmark this workout as done?')) {
-    return;
-  }
-  
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/workout-completions/${currentWorkoutData.completion.id}`,
-      { method: 'DELETE' }
-    );
+  } else {
+    // Unmark
+    if (!currentWorkoutData.completion) return;
     
-    if (response.ok) {
-      document.getElementById('workoutDetailsSection').style.display = 'none';
-      showMessage('Workout unmarked', 'success');
-      loadCalendar();
-    } else {
-      throw new Error('Failed to unmark workout');
+    if (!confirm('Are you sure you want to unmark this workout as done?')) {
+      e.target.checked = true; // Revert checkbox
+      return;
     }
-  } catch (error) {
-    console.error('Error unmarking workout:', error);
-    showMessage('Failed to unmark workout', 'error');
+    
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/workout-completions/${currentWorkoutData.completion.id}`,
+        { method: 'DELETE' }
+      );
+      
+      if (response.ok) {
+        showMessage('Workout unmarked', 'success');
+        loadCalendar();
+      } else {
+        throw new Error('Failed to unmark workout');
+      }
+    } catch (error) {
+      console.error('Error unmarking workout:', error);
+      showMessage('Failed to unmark workout', 'error');
+      e.target.checked = true; // Revert checkbox
+    }
   }
 }
 
@@ -756,42 +758,6 @@ function addMessageToChat(message, sender) {
 
 // ===== FORM HANDLERS =====
 function initializeForms() {
-  // Cardio form
-  document.getElementById('cardioForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const data = {
-      user_id: USER_ID,
-      activity_type: document.getElementById('activityType').value,
-      duration_minutes: parseInt(document.getElementById('duration').value),
-      distance_km: parseFloat(document.getElementById('distance').value) || null,
-      calories_burned: parseInt(document.getElementById('calories').value) || null,
-      notes: document.getElementById('cardioNotes').value
-    };
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/workouts/cardio`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        showResultMessage('cardioResult', '✅ Cardio activity logged!', 'success');
-        e.target.reset();
-      } else {
-        throw new Error(result.error || 'Failed to log activity');
-      }
-    } catch (error) {
-      console.error('Error logging cardio:', error);
-      showResultMessage('cardioResult', '❌ Failed to log activity', 'error');
-    }
-  });
-
   // Nutrition form
   document.getElementById('nutritionForm').addEventListener('submit', async (e) => {
     e.preventDefault();
