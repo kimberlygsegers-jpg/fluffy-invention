@@ -18,16 +18,15 @@
     <main>
       <!-- Tab Navigation -->
       <nav class="tabs">
-        <button class="tab-btn" data-tab="calendar">📅 Calendar</button>
+        <button class="tab-btn active" data-tab="calendar">📅 Calendar</button>
         <button class="tab-btn" data-tab="nutrition">🥗 Smart Nutrition</button>
-        <button class="tab-btn active" data-tab="strength">💪 Log Workout</button>
         <button class="tab-btn" data-tab="cardio">🏃 Cardio</button>
         <button class="tab-btn" data-tab="progress">📊 Progress & Body</button>
         <button class="tab-btn" data-tab="chat">💬 AI Chat</button>
       </nav>
 
       <!-- Calendar Tab -->
-      <div id="calendar" class="tab-content">
+      <div id="calendar" class="tab-content active">
         <div class="calendar-container">
           <div class="calendar-header">
             <button id="prevWeek" class="btn-secondary">← Previous Week</button>
@@ -110,38 +109,7 @@
         </div>
       </div>
 
-      <!-- Strength Training Tab -->
-      <div id="strength" class="tab-content active">
-        <div class="form-container">
-          <h2>Log Strength Training</h2>
-          <form id="strengthForm">
-            <div class="form-group">
-              <label for="exerciseName">Exercise:</label>
-              <input type="text" id="exerciseName" placeholder="e.g., Bench Press, Squat" required>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="weight">Weight (kg):</label>
-                <input type="number" id="weight" step="0.5" min="0" required>
-              </div>
-              <div class="form-group">
-                <label for="reps">Reps:</label>
-                <input type="number" id="reps" min="1" required>
-              </div>
-              <div class="form-group">
-                <label for="sets">Sets:</label>
-                <input type="number" id="sets" min="1" required>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="strengthNotes">Notes (optional):</label>
-              <textarea id="strengthNotes" rows="2" placeholder="How did it feel?"></textarea>
-            </div>
-            <button type="submit" class="btn-primary">Log Workout</button>
-          </form>
-          <div id="strengthResult" class="result-message"></div>
-        </div>
-      </div>
+
 
       <!-- Cardio Tab -->
       <div id="cardio" class="tab-content">

@@ -759,45 +759,6 @@ function addMessageToChat(message, sender) {
 
 // ===== FORM HANDLERS =====
 function initializeForms() {
-  // Strength training form
-  document.getElementById('strengthForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const data = {
-      user_id: USER_ID,
-      exercise_name: document.getElementById('exerciseName').value,
-      weight: parseFloat(document.getElementById('weight').value),
-      reps: parseInt(document.getElementById('reps').value),
-      sets: parseInt(document.getElementById('sets').value),
-      notes: document.getElementById('strengthNotes').value
-    };
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/workouts/strength`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        showResultMessage('strengthResult', 
-          `✅ Workout logged! ${result.progressiveOverload ? '🎉 Progressive overload achieved! ' + result.progressiveOverload : ''}`, 
-          'success'
-        );
-        e.target.reset();
-      } else {
-        throw new Error(result.error || 'Failed to log workout');
-      }
-    } catch (error) {
-      console.error('Error logging strength workout:', error);
-      showResultMessage('strengthResult', '❌ Failed to log workout', 'error');
-    }
-  });
-
   // Cardio form
   document.getElementById('cardioForm').addEventListener('submit', async (e) => {
     e.preventDefault();
