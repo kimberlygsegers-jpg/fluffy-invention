@@ -35,6 +35,33 @@
           </div>
           <div id="calendarGrid" class="calendar-grid"></div>
           
+          <!-- Workout Details Section (below calendar) -->
+          <div id="workoutDetailsSection" class="workout-details-section" style="display:none;">
+            <div class="workout-details-card">
+              <h3 id="selectedDayTitle">Workout Details</h3>
+              <div id="selectedDayContent"></div>
+              
+              <div class="workout-completion-section">
+                <h4>Mark as Complete</h4>
+                <div class="form-group">
+                  <label>Notes (optional):</label>
+                  <textarea id="completionNotes" rows="4" placeholder="How did the workout go? Any PRs or observations?"></textarea>
+                </div>
+                
+                <div class="form-group">
+                  <label>Exercises Completed (one per line, optional):</label>
+                  <textarea id="exercisesCompleted" rows="6" placeholder="Bench Press - 3x8 @ 80kg&#10;Incline Press - 3x10 @ 30kg"></textarea>
+                </div>
+                
+                <div class="completion-actions">
+                  <button id="markDoneBtn" class="btn-primary">✓ Mark as Done</button>
+                  <button id="unmarkDoneBtn" class="btn-secondary" style="display:none;">↺ Unmark</button>
+                  <button id="closeDetailsBtn" class="btn-secondary">Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
           <!-- Quick Add Modal -->
           <div id="quickAddModal" class="modal" style="display:none;">
             <div class="modal-content">

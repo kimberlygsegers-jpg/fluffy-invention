@@ -94,6 +94,11 @@ function initializeCalendar() {
     document.getElementById('workoutDetailsModal').style.display = 'none';
   });
   
+  // Close workout details section (below calendar)
+  document.getElementById('closeDetailsBtn').addEventListener('click', () => {
+    document.getElementById('workoutDetailsSection').style.display = 'none';
+  });
+  
   // Quick add form
   document.getElementById('quickAddForm').addEventListener('submit', handleQuickAdd);
   
@@ -172,12 +177,11 @@ async function loadCalendar() {
         <div class="day-header">${dayLabels[index]}</div>
         <div class="day-date">${dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
         ${schedule ? `
-          <div class="day-workout">
-            <strong>${schedule.workout_type}</strong>
-            ${completion ? '<div style="color: #4CAF50; font-size: 0.85rem; margin-top: 5px;">✓ Completed</div>' : '<div style="color: #888; font-size: 0.85rem; margin-top: 5px;">Click to view</div>'}
+          <div class="day-indicator ${completion ? 'completed' : ''}">
+            <div class="indicator-dot"></div>
+            <span>${schedule.workout_type}</span>
           </div>
-        ` : '<p style="color: #999; font-size: 0.85rem;">Rest day</p>'}
-        <button class="add-workout-btn add-extra-btn" data-date="${dayDate.toISOString()}" data-day="${day}">+ Log Extra</button>
+        ` : '<p class="rest-day-text">Rest</p>'}
       `;
       
       // Make entire day card clickable if there's a scheduled workout
@@ -337,9 +341,9 @@ let currentWorkoutData = null;
 function openWorkoutDetails(schedule, date, completion) {
   currentWorkoutData = { schedule, date, completion };
   
-  const modal = document.getElementById('workoutDetailsModal');
-  const title = document.getElementById('workoutDetailsTitle');
-  const content = document.getElementById('workoutDetailsInfo');
+  const section = document.getElementById('workoutDetailsSection');
+  const title = document.getElementById('selectedDayTitle');
+  const content = document.getElementById('selectedDayContent');
   const notesField = document.getElementById('completionNotes');
   const exercisesField = document.getElementById('exercisesCompleted');
   const markBtn = document.getElementById('markDoneBtn');
@@ -403,7 +407,10 @@ function openWorkoutDetails(schedule, date, completion) {
   }
   
   content.innerHTML = html;
-  modal.style.display = 'block';
+  section.style.display = 'block';
+  
+  // Scroll to details section
+  section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 // Handle marking workout as done
@@ -428,7 +435,7 @@ async function handleMarkDone() {
     });
     
     if (response.ok) {
-      document.getElementById('workoutDetailsModal').style.display = 'none';
+      document.getElementById('workoutDetailsSection').style.display = 'none';
       showMessage('Workout marked as complete! 🎉', 'success');
       loadCalendar();
     } else {
@@ -455,7 +462,7 @@ async function handleUnmarkDone() {
     );
     
     if (response.ok) {
-      document.getElementById('workoutDetailsModal').style.display = 'none';
+      document.getElementById('workoutDetailsSection').style.display = 'none';
       showMessage('Workout unmarked', 'success');
       loadCalendar();
     } else {
