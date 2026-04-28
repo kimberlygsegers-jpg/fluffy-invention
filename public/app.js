@@ -77,6 +77,14 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Set today's date in measurement form
   document.getElementById('measurementDate').valueAsDate = new Date();
+  
+  // Add test function to window for debugging
+  window.testSuccessModal = () => {
+    console.log('🧪 Testing success modal...');
+    showSuccessModal();
+  };
+  
+  console.log('✅ App initialized. Test modal with: window.testSuccessModal()');
 });
 
 // Tab Navigation
@@ -165,7 +173,13 @@ function initializeCalendar() {
   });
   
   // Completion checkbox
-  document.getElementById('completionCheckbox').addEventListener('change', handleCompletionToggle);
+  const completionCheckbox = document.getElementById('completionCheckbox');
+  console.log('🔧 Completion checkbox found:', completionCheckbox);
+  
+  completionCheckbox.addEventListener('change', (e) => {
+    console.log('✅ Checkbox clicked! Checked:', e.target.checked);
+    handleCompletionToggle(e);
+  });
   
   loadCalendar();
 }
@@ -439,8 +453,8 @@ function openWorkoutDetails(schedule, date, completion) {
   
   if (completion) {
     html += `
-      <div class="workout-details-box" style="background: #ECFDF5;">
-        <h4 style="color: #10B981;">✓ Completed</h4>
+      <div class="workout-details-box completed">
+        <h4>✓ Completed</h4>
         <p><strong>Completed at:</strong> ${new Date(completion.completed_at).toLocaleString()}</p>
         ${completion.notes ? `<p style="margin-top: 10px;"><strong>Your notes:</strong> ${completion.notes}</p>` : ''}
       </div>
@@ -457,13 +471,26 @@ function openWorkoutDetails(schedule, date, completion) {
 // Handle marking workout as done
 // Handle completion toggle
 async function handleCompletionToggle(e) {
-  if (!currentWorkoutData) return;
+  console.log('🎯 handleCompletionToggle called');
+  console.log('Current workout data:', currentWorkoutData);
+  
+  if (!currentWorkoutData) {
+    console.error('❌ No current workout data!');
+    return;
+  }
   
   const isChecked = e.target.checked;
+  console.log('Checkbox is checked:', isChecked);
   
   if (isChecked) {
     // Mark as done
     try {
+      console.log('Marking workout complete:', {
+        user_id: USER_ID,
+        schedule_id: currentWorkoutData.schedule.id,
+        completion_date: currentWorkoutData.date
+      });
+      
       const response = await fetch(`${API_BASE_URL}/workout-completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -476,15 +503,31 @@ async function handleCompletionToggle(e) {
         })
       });
       
+      const responseData = await response.json();
+      console.log('Response status:', response.status);
+      console.log('Response OK:', response.ok);
+      console.log('Response data:', responseData);
+      
       if (response.ok) {
-        showMessage('Workout marked as complete! 🎉', 'success');
+        console.log('✅ Response OK - showing success modal');
+        // Show confetti success modal
+        showSuccessModal();
+        // Close the details panel
+        document.getElementById('workoutDetailsSection').style.display = 'none';
+        // Clear selected state
+        if (selectedDayElement) {
+          selectedDayElement.classList.remove('selected');
+          selectedDayElement = null;
+        }
+        // Reload calendar to show completion
         loadCalendar();
       } else {
-        throw new Error('Failed to mark workout complete');
+        console.error('❌ Response not OK:', response.status, responseData);
+        throw new Error(responseData.error || 'Failed to mark workout complete');
       }
     } catch (error) {
-      console.error('Error marking workout complete:', error);
-      showMessage('Failed to mark workout complete', 'error');
+      console.error('❌ Error marking workout complete:', error);
+      showMessage('Failed to mark workout complete: ' + error.message, 'error');
       e.target.checked = false; // Revert checkbox
     }
   } else {
@@ -504,6 +547,14 @@ async function handleCompletionToggle(e) {
       
       if (response.ok) {
         showMessage('Workout unmarked', 'success');
+        // Close the details panel
+        document.getElementById('workoutDetailsSection').style.display = 'none';
+        // Clear selected state
+        if (selectedDayElement) {
+          selectedDayElement.classList.remove('selected');
+          selectedDayElement = null;
+        }
+        // Reload calendar
         loadCalendar();
       } else {
         throw new Error('Failed to unmark workout');
@@ -852,46 +903,51 @@ function addMessageToChat(message, sender) {
 // ===== FORM HANDLERS =====
 function initializeForms() {
   // Nutrition form
-  document.getElementById('nutritionForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
+  const nutritionForm = document.getElementById('nutritionForm');
+  if (nutritionForm) {
+    nutritionForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-    const data = {
-      user_id: USER_ID,
-      meal_type: document.getElementById('mealType').value,
-      food_item: document.getElementById('foodItem').value,
-      calories: parseInt(document.getElementById('nutritionCalories').value) || null,
-      protein_g: parseFloat(document.getElementById('protein').value) || null,
-      carbs_g: parseFloat(document.getElementById('carbs').value) || null,
-      fats_g: parseFloat(document.getElementById('fats').value) || null,
-      notes: document.getElementById('nutritionNotes').value
-    };
+      const data = {
+        user_id: USER_ID,
+        meal_type: document.getElementById('mealType').value,
+        food_item: document.getElementById('foodItem').value,
+        calories: parseInt(document.getElementById('nutritionCalories').value) || null,
+        protein_g: parseFloat(document.getElementById('protein').value) || null,
+        carbs_g: parseFloat(document.getElementById('carbs').value) || null,
+        fats_g: parseFloat(document.getElementById('fats').value) || null,
+        notes: document.getElementById('nutritionNotes').value
+      };
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/nutrition`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
+      try {
+        const response = await fetch(`${API_BASE_URL}/nutrition`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
 
-      const result = await response.json();
+        const result = await response.json();
 
-      if (response.ok) {
-        showResultMessage('nutritionResult', '✅ Meal logged!', 'success');
-        e.target.reset();
-        loadTodaysSummary();
-      } else {
-        throw new Error(result.error || 'Failed to log meal');
+        if (response.ok) {
+          showResultMessage('nutritionResult', '✅ Meal logged!', 'success');
+          e.target.reset();
+          loadTodaysSummary();
+        } else {
+          throw new Error(result.error || 'Failed to log meal');
+        }
+      } catch (error) {
+        console.error('Error logging nutrition:', error);
+        showResultMessage('nutritionResult', '❌ Failed to log meal', 'error');
       }
-    } catch (error) {
-      console.error('Error logging nutrition:', error);
-      showResultMessage('nutritionResult', '❌ Failed to log meal', 'error');
-    }
-  });
+    });
+  }
 
-  // Schedule form
-  document.getElementById('scheduleForm').addEventListener('submit', async (e) => {
+  // Schedule form (optional - may not exist in current version)
+  const scheduleForm = document.getElementById('scheduleForm');
+  if (scheduleForm) {
+    scheduleForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const exercisesText = document.getElementById('scheduleExercises').value;
@@ -929,9 +985,12 @@ function initializeForms() {
       showResultMessage('scheduleResult', '❌ Failed to save schedule', 'error');
     }
   });
+  }
 
-  // Progress tracking
-  document.getElementById('loadProgressBtn').addEventListener('click', async () => {
+  // Progress tracking (optional - may not exist in current version)
+  const loadProgressBtn = document.getElementById('loadProgressBtn');
+  if (loadProgressBtn) {
+    loadProgressBtn.addEventListener('click', async () => {
     const exercise = document.getElementById('progressExercise').value.trim();
     
     if (!exercise) {
@@ -953,6 +1012,7 @@ function initializeForms() {
       showResultMessage('progressChart', '❌ Failed to load progress', 'error');
     }
   });
+  }
 }
 
 // Helper function to display result messages
@@ -986,6 +1046,81 @@ function showMessage(message, type) {
     messageDiv.style.animation = 'fadeOut 0.3s ease-out';
     setTimeout(() => messageDiv.remove(), 300);
   }, 3000);
+}
+
+// Confetti Success Modal
+function showSuccessModal() {
+  console.log('🎉 showSuccessModal called');
+  const modal = document.getElementById('successModal');
+  const confettiContainer = document.getElementById('confettiContainer');
+  
+  console.log('Modal element:', modal);
+  console.log('Confetti container:', confettiContainer);
+  
+  if (!modal) {
+    console.error('❌ Success modal not found!');
+    return;
+  }
+  
+  // Show modal
+  modal.classList.add('active');
+  console.log('✅ Modal shown');
+  
+  // Create confetti
+  createConfetti(confettiContainer);
+  
+  // Close modal button
+  const closeBtn = document.getElementById('closeSuccessModal');
+  closeBtn.onclick = () => {
+    modal.classList.remove('active');
+    confettiContainer.innerHTML = ''; // Clear confetti
+  };
+  
+  // Auto-close after 5 seconds
+  setTimeout(() => {
+    if (modal.classList.contains('active')) {
+      modal.classList.remove('active');
+      confettiContainer.innerHTML = '';
+    }
+  }, 5000);
+}
+
+function createConfetti(container) {
+  const colors = ['#FF6900', '#00D563', '#FFFFFF', '#FF8533'];
+  const confettiCount = 150;
+  
+  for (let i = 0; i < confettiCount; i++) {
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti';
+    
+    // Random position
+    confetti.style.left = Math.random() * 100 + '%';
+    
+    // Random delay
+    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+    
+    // Random duration (2-4 seconds)
+    confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+    
+    // Random color
+    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+    
+    // Random size
+    const size = Math.random() * 8 + 6;
+    confetti.style.width = size + 'px';
+    confetti.style.height = size + 'px';
+    
+    // Random rotation speed
+    const rotations = Math.random() * 4 + 2;
+    confetti.style.setProperty('--rotations', rotations);
+    
+    container.appendChild(confetti);
+  }
+  
+  // Clear confetti after animation
+  setTimeout(() => {
+    container.innerHTML = '';
+  }, 4000);
 }
 
 // Load today's nutrition summary

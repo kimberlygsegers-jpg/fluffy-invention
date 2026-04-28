@@ -6,10 +6,10 @@ const { pool } = require('../db');
 router.post('/', async (req, res) => {
   try {
     const { 
-      userId, 
-      measurementDate, 
+      user_id, 
+      measurement_date, 
       weight, 
-      bodyFatPercentage, 
+      body_fat_percentage, 
       chest, 
       waist, 
       hips, 
@@ -19,7 +19,7 @@ router.post('/', async (req, res) => {
       notes 
     } = req.body;
 
-    if (!userId || !measurementDate) {
+    if (!user_id || !measurement_date) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -42,10 +42,10 @@ router.post('/', async (req, res) => {
     `;
 
     const values = [
-      userId,
-      measurementDate,
+      user_id,
+      measurement_date,
       weight || null,
-      bodyFatPercentage || null,
+      body_fat_percentage || null,
       chest || null,
       waist || null,
       hips || null,

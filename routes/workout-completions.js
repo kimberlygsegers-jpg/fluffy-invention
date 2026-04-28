@@ -60,7 +60,10 @@ router.post('/', async (req, res) => {
   try {
     const { user_id, schedule_id, completion_date, notes, exercises_completed } = req.body;
     
+    console.log('📝 Marking workout complete:', { user_id, schedule_id, completion_date });
+    
     if (!user_id || !schedule_id || !completion_date) {
+      console.error('❌ Missing required fields:', { user_id, schedule_id, completion_date });
       return res.status(400).json({ error: 'Missing required fields' });
     }
     
@@ -78,14 +81,16 @@ router.post('/', async (req, res) => {
       [user_id, schedule_id, completion_date, notes, JSON.stringify(exercises_completed)]
     );
     
+    console.log('✅ Workout marked complete:', result.rows[0]);
+    
     res.json({ 
       success: true,
       message: 'Workout marked as complete!',
       completion: result.rows[0]
     });
   } catch (error) {
-    console.error('Error marking workout complete:', error);
-    res.status(500).json({ error: 'Failed to mark workout complete' });
+    console.error('❌ Error marking workout complete:', error);
+    res.status(500).json({ error: 'Failed to mark workout complete', details: error.message });
   }
 });
 
