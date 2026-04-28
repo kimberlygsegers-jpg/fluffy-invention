@@ -14,8 +14,13 @@ console.log('  Using DATABASE_URL:', !!process.env.DATABASE_URL);
 const pool = new Pool(
   process.env.DATABASE_URL
     ? {
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+        // Use Supabase connection pooler (port 6543) for better serverless compatibility
+        user: 'postgres',
+        host: 'db.vvjkpfyleoiamuxhbyyy.supabase.co',
+        database: 'postgres',
+        password: 'Groenendaeler1!',
+        port: 6543,
+        ssl: { rejectUnauthorized: false }
       }
     : {
         user: process.env.DB_USER,
