@@ -1311,6 +1311,107 @@ textarea.form-input {
 .confetti:nth-child(4n) { background: var(--accent-light); width: 8px; height: 8px; }
 .confetti:nth-child(5n) { width: 12px; height: 12px; }
 
+/* === PROGRESS CHARTS === */
+.progress-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.progress-summary-item {
+  background: var(--neutral-50);
+  border: 1px solid var(--neutral-100);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+.progress-summary-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--neutral-950);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.progress-summary-change {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.progress-summary-change.positive {
+  color: var(--success);
+}
+
+.progress-summary-change.negative {
+  color: var(--error);
+}
+
+.progress-summary-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--neutral-600);
+}
+
+.progress-chart-item {
+  background: var(--neutral-50);
+  border: 1px solid var(--neutral-100);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.progress-chart-item h4 {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--neutral-600);
+  margin-bottom: 20px;
+}
+
+.chart-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.chart-bar-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--neutral-700);
+  min-width: 60px;
+  text-align: right;
+}
+
+.chart-bar-visual {
+  flex: 1;
+  height: 32px;
+  background: var(--neutral-100);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.chart-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-pure), var(--accent-light));
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--neutral-0);
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 60px;
+}
+
 /* === UTILITIES === */
 .visually-hidden {
   position: absolute;

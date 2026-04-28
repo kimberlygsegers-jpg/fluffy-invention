@@ -743,11 +743,11 @@ async function loadBodyMeasurements() {
     const data = await response.json();
     
     console.log('📈 Measurements data received:', {
-      count: data.measurements?.length || 0,
-      measurements: data.measurements
+      count: data.data?.length || 0,
+      rawResponse: data
     });
     
-    if (!data.measurements || data.measurements.length === 0) {
+    if (!data.data || data.data.length === 0) {
       chartsDiv.innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">📊</div>
@@ -773,11 +773,26 @@ async function loadBodyMeasurements() {
 }
 
 function renderProgressCharts(data) {
+  console.log('🎨 Rendering progress charts with data:', data);
+  console.log('📊 Number of measurements:', data.data?.length);
+  console.log('📈 Measurements array:', data.data);
+  
   const chartsDiv = document.getElementById('progressCharts');
   
-  // Summary cards
-  const latest = data.measurements[0];
-  const summary = data.summary;
+  if (!chartsDiv) {
+    console.error('❌ progressCharts div not found!');
+    return;
+  }
+  
+  // Use the correct property names from backend response
+  const measurements_data = data.data; // Array of measurements
+  const changes = data.changes; // Summary changes
+  
+  // Get latest measurement (last in array since ordered ASC)
+  const latest = measurements_data[measurements_data.length - 1];
+  
+  console.log('📋 Latest measurement:', latest);
+  console.log('📋 Changes:', changes);
   
   let summaryHTML = '<div class="progress-summary">';
   
@@ -785,7 +800,7 @@ function renderProgressCharts(data) {
     summaryHTML += `
       <div class="progress-summary-item">
         <div class="progress-summary-value">${latest.weight} kg</div>
-        ${summary.weightChange ? `<div class="progress-summary-change ${summary.weightChange < 0 ? 'positive' : 'negative'}">${summary.weightChange > 0 ? '+' : ''}${summary.weightChange.toFixed(1)} kg</div>` : ''}
+        ${changes && changes.weight ? `<div class="progress-summary-change ${changes.weight < 0 ? 'positive' : 'negative'}">${parseFloat(changes.weight) > 0 ? '+' : ''}${changes.weight} kg</div>` : ''}
         <div class="progress-summary-label">Current Weight</div>
       </div>
     `;
@@ -795,7 +810,7 @@ function renderProgressCharts(data) {
     summaryHTML += `
       <div class="progress-summary-item">
         <div class="progress-summary-value">${latest.body_fat_percentage}%</div>
-        ${summary.bodyFatChange ? `<div class="progress-summary-change ${summary.bodyFatChange < 0 ? 'positive' : 'negative'}">${summary.bodyFatChange > 0 ? '+' : ''}${summary.bodyFatChange.toFixed(1)}%</div>` : ''}
+        ${changes && changes.bodyFat ? `<div class="progress-summary-change ${changes.bodyFat < 0 ? 'positive' : 'negative'}">${parseFloat(changes.bodyFat) > 0 ? '+' : ''}${changes.bodyFat}%</div>` : ''}
         <div class="progress-summary-label">Body Fat</div>
       </div>
     `;
@@ -810,7 +825,7 @@ function renderProgressCharts(data) {
   let chartsHTML = summaryHTML;
   
   measurements.forEach((measurement, idx) => {
-    const values = data.measurements.map(m => m[measurement]).filter(v => v !== null);
+    const values = measurements_data.map(m => m[measurement]).filter(v => v !== null);
     
     if (values.length > 0) {
       const max = Math.max(...values);
@@ -820,7 +835,7 @@ function renderProgressCharts(data) {
       chartsHTML += `
         <div class="progress-chart-item">
           <h4>${labels[idx]}</h4>
-          ${data.measurements.slice().reverse().map((m, i) => {
+          ${measurements_data.map((m, i) => {
             if (m[measurement] === null) return '';
             const percentage = ((m[measurement] - min) / range) * 100;
             const date = new Date(m.measurement_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -839,6 +854,11 @@ function renderProgressCharts(data) {
   });
   
   chartsDiv.innerHTML = chartsHTML;
+  console.log('✅ Charts HTML set! Length:', chartsHTML.length, 'characters');
+  console.log('📊 Number of chart items rendered:', measurements.filter((m, idx) => {
+    const values = measurements_data.map(m => m[measurements[idx]]).filter(v => v !== null);
+    return values.length > 0;
+  }).length);
 }
 
 // Measurement form handler
