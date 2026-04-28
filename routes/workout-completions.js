@@ -17,11 +17,11 @@ router.get('/:userId', async (req, res) => {
     const params = [userId];
     
     if (startDate) {
-      query += ` AND wc.completion_date >= $${params.length + 1}`;
+      query += ` AND wc.completion_date >= $${params.length + 1}::date`;
       params.push(startDate);
     }
     if (endDate) {
-      query += ` AND wc.completion_date <= $${params.length + 1}`;
+      query += ` AND wc.completion_date <= $${params.length + 1}::date`;
       params.push(endDate);
     }
     
@@ -41,7 +41,7 @@ router.get('/:userId/check/:scheduleId/:date', async (req, res) => {
     const { userId, scheduleId, date } = req.params;
     
     const result = await pool.query(
-      'SELECT * FROM workout_completions WHERE user_id = $1 AND schedule_id = $2 AND completion_date = $3',
+      'SELECT * FROM workout_completions WHERE user_id = $1 AND schedule_id = $2 AND completion_date = $3::date',
       [userId, scheduleId, date]
     );
     
@@ -71,7 +71,7 @@ router.post('/', async (req, res) => {
     const result = await pool.query(
       `INSERT INTO workout_completions 
         (user_id, schedule_id, completion_date, notes, exercises_completed)
-      VALUES ($1, $2, $3, $4, $5)
+      VALUES ($1, $2, $3::date, $4, $5)
       ON CONFLICT (user_id, schedule_id, completion_date)
       DO UPDATE SET 
         notes = EXCLUDED.notes,

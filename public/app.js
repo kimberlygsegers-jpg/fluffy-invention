@@ -1,7 +1,11 @@
 // Configuration
+console.log('🚀 APP.JS IS LOADING...');
+
 const API_BASE_URL = window.location.hostname === 'localhost' 
   ? 'http://localhost:3000/api' 
   : '/api';
+
+console.log('📍 API_BASE_URL:', API_BASE_URL);
 
 // Demo user ID (in production, this would come from authentication)
 const USER_ID = 1;
@@ -133,53 +137,81 @@ function setGreeting() {
 
 // ===== CALENDAR VIEW =====
 function initializeCalendar() {
-  document.getElementById('prevWeek').addEventListener('click', () => {
-    currentWeekOffset--;
-    loadCalendar();
-  });
+  console.log('🗓️ Initializing calendar...');
   
-  document.getElementById('nextWeek').addEventListener('click', () => {
-    currentWeekOffset++;
-    loadCalendar();
-  });
+  const prevWeek = document.getElementById('prevWeek');
+  const nextWeek = document.getElementById('nextWeek');
   
-  // Close quick add modal
-  document.getElementById('closeModal').addEventListener('click', () => {
-    document.getElementById('quickAddModal').style.display = 'none';
-  });
+  if (prevWeek) {
+    prevWeek.addEventListener('click', () => {
+      currentWeekOffset--;
+      loadCalendar();
+    });
+  }
   
-  // Close workout details modal
-  document.getElementById('closeDetailsModal').addEventListener('click', () => {
-    document.getElementById('workoutDetailsModal').style.display = 'none';
-  });
+  if (nextWeek) {
+    nextWeek.addEventListener('click', () => {
+      currentWeekOffset++;
+      loadCalendar();
+    });
+  }
+  
+  // Close quick add modal (optional - may not exist)
+  const closeModal = document.getElementById('closeModal');
+  if (closeModal) {
+    closeModal.addEventListener('click', () => {
+      document.getElementById('quickAddModal').style.display = 'none';
+    });
+  }
+  
+  // Close workout details modal (optional - may not exist)
+  const closeDetailsModal = document.getElementById('closeDetailsModal');
+  if (closeDetailsModal) {
+    closeDetailsModal.addEventListener('click', () => {
+      document.getElementById('workoutDetailsModal').style.display = 'none';
+    });
+  }
   
   // Close workout details section (below calendar)
-  document.getElementById('closeDetailsBtn').addEventListener('click', () => {
-    document.getElementById('workoutDetailsSection').style.display = 'none';
-    // Clear selected state
-    if (selectedDayElement) {
-      selectedDayElement.classList.remove('selected');
-      selectedDayElement = null;
-    }
-  });
+  const closeDetailsBtn = document.getElementById('closeDetailsBtn');
+  if (closeDetailsBtn) {
+    closeDetailsBtn.addEventListener('click', () => {
+      document.getElementById('workoutDetailsSection').style.display = 'none';
+      // Clear selected state
+      if (selectedDayElement) {
+        selectedDayElement.classList.remove('selected');
+        selectedDayElement = null;
+      }
+    });
+  }
   
-  // Quick add form
-  document.getElementById('quickAddForm').addEventListener('submit', handleQuickAdd);
+  // Quick add form (optional - may not exist)
+  const quickAddForm = document.getElementById('quickAddForm');
+  if (quickAddForm) {
+    quickAddForm.addEventListener('submit', handleQuickAdd);
+  }
   
-  // Workout type change handler
-  document.getElementById('quickWorkoutType').addEventListener('change', (e) => {
-    const type = e.target.value;
-    renderQuickAddFields(type);
-  });
+  // Workout type change handler (optional - may not exist)
+  const quickWorkoutType = document.getElementById('quickWorkoutType');
+  if (quickWorkoutType) {
+    quickWorkoutType.addEventListener('change', (e) => {
+      const type = e.target.value;
+      renderQuickAddFields(type);
+    });
+  }
   
   // Completion checkbox
   const completionCheckbox = document.getElementById('completionCheckbox');
   console.log('🔧 Completion checkbox found:', completionCheckbox);
   
-  completionCheckbox.addEventListener('change', (e) => {
-    console.log('✅ Checkbox clicked! Checked:', e.target.checked);
-    handleCompletionToggle(e);
-  });
+  if (completionCheckbox) {
+    completionCheckbox.addEventListener('change', (e) => {
+      console.log('✅ Checkbox clicked! Checked:', e.target.checked);
+      handleCompletionToggle(e);
+    });
+  } else {
+    console.error('❌ Completion checkbox not found!');
+  }
   
   loadCalendar();
 }
@@ -211,6 +243,16 @@ async function loadCalendar() {
     const completionsData = await completionsResponse.json();
     const completions = completionsData.completions || [];
     
+    console.log('📅 Fetched completions for week:', {
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0],
+      completions: completions.map(c => ({
+        schedule_id: c.schedule_id,
+        completion_date: c.completion_date,
+        day_of_week: c.day_of_week
+      }))
+    });
+    
     // Update title
     if (currentWeekOffset === 0) {
       weekTitle.textContent = 'This Week';
@@ -238,10 +280,32 @@ async function loadCalendar() {
       const isToday = isSameDay(dayDate, today);
       
       // Check if this workout is completed
-      const completion = schedule ? completions.find(c => 
-        c.schedule_id === schedule.id && 
-        c.completion_date.split('T')[0] === dateStr
-      ) : null;
+      // Need to compare dates carefully due to timezone issues
+      const completion = schedule ? completions.find(c => {
+        if (c.schedule_id !== schedule.id) return false;
+        
+        // Extract just the date part from the completion date
+        const completionDate = new Date(c.completion_date);
+        const completionDateStr = completionDate.toISOString().split('T')[0];
+        
+        // Also try comparing with the local date string
+        const localDateStr = completionDate.getFullYear() + '-' + 
+          String(completionDate.getMonth() + 1).padStart(2, '0') + '-' + 
+          String(completionDate.getDate()).padStart(2, '0');
+        
+        const matches = completionDateStr === dateStr || localDateStr === dateStr;
+        
+        if (matches) {
+          console.log('✅ Found completion match:', {
+            dateStr,
+            completionDateStr,
+            localDateStr,
+            schedule_id: schedule.id
+          });
+        }
+        
+        return matches;
+      }) : null;
       
       const dayCard = document.createElement('div');
       dayCard.className = `calendar-day ${schedule ? 'has-workout' : ''} ${completion ? 'completed' : ''} ${isToday ? 'today' : ''}`;
@@ -668,6 +732,7 @@ async function loadSmartNutrition() {
 
 // ===== BODY MEASUREMENTS & PROGRESS =====
 async function loadBodyMeasurements() {
+  console.log('📊 Loading body measurements...');
   const chartsDiv = document.getElementById('progressCharts');
   
   // Show loading state
@@ -676,6 +741,11 @@ async function loadBodyMeasurements() {
   try {
     const response = await fetch(`${API_BASE_URL}/measurements/progress/${USER_ID}`);
     const data = await response.json();
+    
+    console.log('📈 Measurements data received:', {
+      count: data.measurements?.length || 0,
+      measurements: data.measurements
+    });
     
     if (!data.measurements || data.measurements.length === 0) {
       chartsDiv.innerHTML = `
@@ -689,6 +759,7 @@ async function loadBodyMeasurements() {
     }
     
     renderProgressCharts(data);
+    console.log('✅ Charts rendered successfully!');
   } catch (error) {
     console.error('Error loading measurements:', error);
     chartsDiv.innerHTML = `
@@ -797,7 +868,17 @@ document.getElementById('measurementForm').addEventListener('submit', async (e) 
     
     if (response.ok) {
       showResultMessage('measurementResult', 'Measurements saved successfully! 📊', 'success');
-      loadBodyMeasurements();
+      
+      // Reset the form
+      e.target.reset();
+      
+      // Set date back to today
+      document.getElementById('measurementDate').value = new Date().toISOString().split('T')[0];
+      
+      // Reload the progress charts to show the new measurement
+      console.log('📊 Reloading progress charts after save...');
+      await loadBodyMeasurements();
+      console.log('✅ Progress charts reloaded!');
     } else {
       throw new Error('Failed to save measurements');
     }
@@ -1138,7 +1219,7 @@ async function loadTodaysSummary() {
         html += `
           <div class="meal-summary">
             <h4>${meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)}</h4>
-            ${meal.items.map(item => `<p>• ${item.food_item}</p>`).join('')}
+            ${meal.items && meal.items.length > 0 ? meal.items.map(item => `<p>• ${item.food_item}</p>`).join('') : '<p>No items</p>'}
             <p class="meal-totals">
               Calories: ${meal.total_calories || 0} | 
               Protein: ${meal.total_protein || 0}g | 
