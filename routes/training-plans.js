@@ -27,6 +27,51 @@ router.get('/user/:userId', async (req, res) => {
   }
 });
 
+// Get all training plans for a user (alias for /:userId)
+router.get('/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Check if it's a numeric user ID
+    if (!/^\d+$/.test(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+    
+    const planResult = await pool.query(
+      `SELECT * FROM training_plans 
+       WHERE user_id = $1 
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [userId]
+    );
+    
+    if (planResult.rows.length === 0) {
+      return res.json({ plans: [] });
+    }
+    
+    const plan = planResult.rows[0];
+    
+    // Get workouts for this plan
+    const workoutsResult = await pool.query(
+      `SELECT * FROM daily_workouts 
+       WHERE plan_id = $1 
+       ORDER BY workout_date ASC`,
+      [plan.id]
+    );
+    
+    // Return plan with schedule
+    res.json({ 
+      plans: [{
+        ...plan,
+        schedule: workoutsResult.rows
+      }]
+    });
+  } catch (error) {
+    console.error('Error fetching training plans:', error);
+    res.status(500).json({ error: 'Failed to fetch training plans' });
+  }
+});
+
 // Get specific training plan with all workouts
 router.get('/:planId', async (req, res) => {
   try {
@@ -114,6 +159,183 @@ router.post('/fitness-tests', async (req, res) => {
   } catch (error) {
     console.error('Error adding fitness test:', error);
     res.status(500).json({ error: 'Failed to add fitness test' });
+  }
+});
+
+// Create a new training plan (simplified endpoint)
+router.post('/', async (req, res) => {
+  try {
+    const {
+      user_id,
+      goal_race_distance,
+      goal_race_date,
+      goal_time,
+      current_weekly_mileage,
+      training_days_per_week,
+      experience_level,
+      recent_race_distance,
+      recent_race_time
+    } = req.body;
+    
+    console.log('🏃 Creating training plan:', req.body);
+    
+    // Calculate VDOT from recent race if provided, otherwise estimate
+    let vdot;
+    if (recent_race_distance && recent_race_time) {
+      vdot = calculateVDOT(recent_race_distance, recent_race_time);
+      console.log(`📊 Calculated VDOT from recent race: ${vdot.toFixed(1)}`);
+    } else {
+      // Estimate VDOT based on experience level
+      const vdotEstimates = {
+        beginner: 35,
+        intermediate: 45,
+        advanced: 55
+      };
+      vdot = vdotEstimates[experience_level] || 45;
+      console.log(`📊 Estimated VDOT from experience level: ${vdot}`);
+    }
+    
+    // Set plan start date to tomorrow
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() + 1);
+    const planStartDate = startDate.toISOString().split('T')[0];
+    
+    // Calculate plan duration in weeks
+    const raceDate = new Date(goal_race_date);
+    const weeksToRace = Math.floor((raceDate - startDate) / (7 * 24 * 60 * 60 * 1000));
+    
+    if (weeksToRace < 4) {
+      return res.status(400).json({ 
+        error: 'Race date must be at least 4 weeks away' 
+      });
+    }
+    
+    // Generate plan name
+    const distanceNames = {
+      5: '5K',
+      10: '10K',
+      21.1: 'Half Marathon',
+      42.2: 'Marathon'
+    };
+    const planName = `${distanceNames[goal_race_distance] || goal_race_distance + 'K'} Training Plan`;
+    
+    // Generate the training plan using the algorithm
+    const planData = generateTrainingPlan({
+      currentVDOT: vdot,
+      goalRaceDate: goal_race_date,
+      planStartDate: planStartDate,
+      currentWeeklyMileage: current_weekly_mileage || 20,
+      trainingDaysPerWeek: training_days_per_week,
+      goalRaceDistance: goal_race_distance
+    });
+    
+    console.log(`📅 Generated ${planData.schedule.length} weeks of training`);
+    
+    // Calculate plan end date (1 day before race)
+    const endDate = new Date(goal_race_date);
+    endDate.setDate(endDate.getDate() - 1);
+    
+    // Calculate predicted race time if goal time provided
+    let predictedTime = null;
+    if (goal_time) {
+      predictedTime = goal_time; // For now, use goal time as predicted
+    } else if (vdot) {
+      // Estimate race time from VDOT (simplified)
+      const paces = calculateTrainingPaces(vdot);
+      predictedTime = Math.round(goal_race_distance * paces.threshold);
+    }
+    
+    // Insert training plan
+    const planResult = await pool.query(
+      `INSERT INTO training_plans 
+        (user_id, plan_name, goal_race_distance, goal_race_date, goal_time, 
+         current_vdot, plan_start_date, plan_duration_weeks, training_days_per_week, 
+         predicted_time)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING *`,
+      [
+        user_id,
+        planName,
+        goal_race_distance,
+        goal_race_date,
+        goal_time,
+        vdot.toFixed(2),
+        planStartDate,
+        planData.schedule.length,
+        training_days_per_week,
+        predictedTime
+      ]
+    );
+    
+    const planId = planResult.rows[0].id;
+    console.log(`✅ Created plan with ID: ${planId}`);
+    
+    // Insert training zones
+    const paces = calculateTrainingPaces(vdot);
+    const zones = [
+      { name: 'easy', pace: paces.easy, description: 'Comfortable, conversational pace' },
+      { name: 'tempo', pace: paces.tempo, description: 'Comfortably hard, controlled effort' },
+      { name: 'threshold', pace: paces.threshold, description: 'Hard but sustainable pace' },
+      { name: 'interval', pace: paces.interval, description: 'Very hard effort, short repeats' },
+      { name: 'repetition', pace: paces.repetition, description: 'Near maximum effort, very short repeats' }
+    ];
+    
+    for (const zone of zones) {
+      await pool.query(
+        `INSERT INTO training_zones (plan_id, zone_name, pace_per_km, description)
+         VALUES ($1, $2, $3, $4)`,
+        [planId, zone.name, secondsToInterval(zone.pace), zone.description]
+      );
+    }
+    
+    // Insert planned workouts
+    for (const week of planData.schedule) {
+      for (const workout of week.workouts) {
+        await pool.query(
+          `INSERT INTO daily_workouts 
+            (plan_id, workout_date, week_number, day_of_week, workout_type, distance, 
+             target_pace, warmup_distance, cooldown_distance, intervals_json, description)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+          [
+            planId,
+            workout.date,
+            week.weekNumber,
+            workout.dayOfWeek,
+            workout.type,
+            workout.distance || 0,
+            workout.pace ? secondsToInterval(workout.pace) : null,
+            workout.warmup || 0,
+            workout.cooldown || 0,
+            workout.intervals ? JSON.stringify(workout.intervals) : null,
+            workout.description || ''
+          ]
+        );
+      }
+    }
+    
+    // Get the complete plan with workouts to return
+    const workoutsResult = await pool.query(
+      `SELECT * FROM daily_workouts 
+       WHERE plan_id = $1 
+       ORDER BY workout_date ASC`,
+      [planId]
+    );
+    
+    console.log('✅ Training plan created successfully!');
+    
+    res.json({
+      success: true,
+      plan: planResult.rows[0],
+      schedule: workoutsResult.rows,
+      message: `${planData.schedule.length}-week training plan created successfully!`
+    });
+  } catch (error) {
+    console.error('❌ Error creating training plan:', error);
+    console.error('Stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to create training plan',
+      details: error.message 
+    });
   }
 });
 
