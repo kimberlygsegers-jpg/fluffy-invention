@@ -21,6 +21,7 @@ const scheduleRoutes = require('./routes/schedule');
 const measurementsRoutes = require('./routes/measurements');
 const nutritionRecommendationsRoutes = require('./routes/nutrition-recommendations');
 const workoutCompletionsRoutes = require('./routes/workout-completions');
+const trainingPlansRoutes = require('./routes/training-plans');
 
 // Use routes
 app.use('/api/chat', chatRoutes);
@@ -30,6 +31,7 @@ app.use('/api/schedule', scheduleRoutes);
 app.use('/api/measurements', measurementsRoutes);
 app.use('/api/nutrition-recommendations', nutritionRecommendationsRoutes);
 app.use('/api/workout-completions', workoutCompletionsRoutes);
+app.use('/api/training-plans', trainingPlansRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

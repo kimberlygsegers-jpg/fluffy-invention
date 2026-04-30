@@ -36,6 +36,14 @@
           <span>Calendar</span>
         </button>
         
+        <button class="nav-item" data-tab="training-plans">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M5 3L7 3M7 3L7 5M7 3L9 5M11 3H13M13 3V5M13 3L15 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M3 8H17M3 12H17M3 16H17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span>Plans</span>
+        </button>
+        
         <button class="nav-item" data-tab="nutrition">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
@@ -120,6 +128,143 @@
             <div class="panel-footer">
               <button id="closeDetailsBtn" class="btn btn-ghost">Close</button>
             </div>
+          </div>
+        </div>
+
+        <!-- Training Plans View -->
+        <div id="training-plans" class="view">
+          <div class="page-header">
+            <div class="page-header-content">
+              <h1 class="page-title">Training Plans</h1>
+              <p class="page-subtitle">AI-powered personalized running schedules</p>
+            </div>
+          </div>
+
+          <!-- Current Plan Display -->
+          <div id="currentPlanDisplay" style="display:none;">
+            <div class="section-card">
+              <div class="section-header">
+                <h2 class="section-title" id="planTitle">Your Training Plan</h2>
+                <button id="deletePlanBtn" class="btn btn-ghost btn-sm">Delete Plan</button>
+              </div>
+              <div id="planSummary" class="plan-summary"></div>
+            </div>
+
+            <!-- Weekly Schedule Display -->
+            <div class="section-card">
+              <div class="section-header">
+                <h2 class="section-title">Weekly Schedule</h2>
+                <div class="week-selector">
+                  <button id="prevPlanWeek" class="btn btn-ghost btn-icon btn-sm">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                  <span id="currentWeekNumber" class="week-number">Week 1 of 12</span>
+                  <button id="nextPlanWeek" class="btn btn-ghost btn-icon btn-sm">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div id="weekSchedule" class="week-schedule"></div>
+            </div>
+          </div>
+
+          <!-- Create New Plan Form -->
+          <div id="createPlanForm" class="section-card">
+            <h2 class="section-title">Create Your Training Plan</h2>
+            <form id="trainingPlanForm" class="form">
+              <!-- Goal Selection -->
+              <div class="form-section">
+                <h3 class="form-section-title">Race Goal</h3>
+                <div class="form-grid-2">
+                  <div class="form-field">
+                    <label class="form-label">Race Distance</label>
+                    <select id="raceDistance" class="form-input" required>
+                      <option value="">Select distance...</option>
+                      <option value="5">5K</option>
+                      <option value="10">10K</option>
+                      <option value="21.1">Half Marathon</option>
+                      <option value="42.2">Marathon</option>
+                    </select>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Race Date</label>
+                    <input type="date" id="raceDate" class="form-input" required>
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Goal Time (optional)</label>
+                  <div class="time-input-group">
+                    <input type="number" id="goalHours" class="form-input" placeholder="HH" min="0" max="9" style="width: 70px;">
+                    <span>:</span>
+                    <input type="number" id="goalMinutes" class="form-input" placeholder="MM" min="0" max="59" style="width: 70px;">
+                    <span>:</span>
+                    <input type="number" id="goalSeconds" class="form-input" placeholder="SS" min="0" max="59" style="width: 70px;">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Current Fitness -->
+              <div class="form-section">
+                <h3 class="form-section-title">Current Fitness</h3>
+                <div class="form-grid-2">
+                  <div class="form-field">
+                    <label class="form-label">Recent Race Distance (km)</label>
+                    <select id="recentDistance" class="form-input">
+                      <option value="">Select distance...</option>
+                      <option value="5">5K</option>
+                      <option value="10">10K</option>
+                      <option value="21.1">Half Marathon</option>
+                      <option value="42.2">Marathon</option>
+                    </select>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Recent Race Time</label>
+                    <div class="time-input-group">
+                      <input type="number" id="recentHours" class="form-input" placeholder="HH" min="0" max="9" style="width: 70px;">
+                      <span>:</span>
+                      <input type="number" id="recentMinutes" class="form-input" placeholder="MM" min="0" max="59" style="width: 70px;">
+                      <span>:</span>
+                      <input type="number" id="recentSeconds" class="form-input" placeholder="SS" min="0" max="59" style="width: 70px;">
+                    </div>
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Current Weekly Mileage (km)</label>
+                  <input type="number" id="currentMileage" class="form-input" placeholder="e.g., 30" step="1" min="0" required>
+                </div>
+              </div>
+
+              <!-- Training Preferences -->
+              <div class="form-section">
+                <h3 class="form-section-title">Training Preferences</h3>
+                <div class="form-grid-2">
+                  <div class="form-field">
+                    <label class="form-label">Training Days Per Week</label>
+                    <select id="trainingDays" class="form-input" required>
+                      <option value="3">3 days</option>
+                      <option value="4" selected>4 days</option>
+                      <option value="5">5 days</option>
+                      <option value="6">6 days</option>
+                    </select>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Experience Level</label>
+                    <select id="experienceLevel" class="form-input" required>
+                      <option value="beginner">Beginner</option>
+                      <option value="intermediate" selected>Intermediate</option>
+                      <option value="advanced">Advanced</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div id="planFormResult" class="form-result"></div>
+              <button type="submit" class="btn btn-primary">Generate Training Plan</button>
+            </form>
           </div>
         </div>
 

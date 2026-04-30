@@ -75,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initializeChat();
   initializeForms();
   initializeCalendar();
+  initializeTrainingPlans();
   loadSmartNutrition();
   loadBodyMeasurements();
   setGreeting();
@@ -1222,6 +1223,314 @@ function createConfetti(container) {
   setTimeout(() => {
     container.innerHTML = '';
   }, 4000);
+}
+
+// ===== TRAINING PLANS =====
+let currentPlan = null;
+let currentPlanWeek = 1;
+
+async function initializeTrainingPlans() {
+  console.log('🏃 Initializing training plans...');
+  
+  // Check if user has an active plan
+  await loadCurrentPlan();
+  
+  // Set up form handler
+  const planForm = document.getElementById('trainingPlanForm');
+  if (planForm) {
+    planForm.addEventListener('submit', handleCreatePlan);
+  }
+  
+  // Set up week navigation
+  const prevWeekBtn = document.getElementById('prevPlanWeek');
+  const nextWeekBtn = document.getElementById('nextPlanWeek');
+  
+  if (prevWeekBtn) {
+    prevWeekBtn.addEventListener('click', () => {
+      if (currentPlanWeek > 1) {
+        currentPlanWeek--;
+        displayWeekSchedule(currentPlan, currentPlanWeek);
+      }
+    });
+  }
+  
+  if (nextWeekBtn) {
+    nextWeekBtn.addEventListener('click', () => {
+      const totalWeeks = currentPlan?.weeks?.length || 12;
+      if (currentPlanWeek < totalWeeks) {
+        currentPlanWeek++;
+        displayWeekSchedule(currentPlan, currentPlanWeek);
+      }
+    });
+  }
+  
+  // Set up delete button
+  const deleteBtn = document.getElementById('deletePlanBtn');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', handleDeletePlan);
+  }
+  
+  // Set minimum race date to tomorrow
+  const raceDateInput = document.getElementById('raceDate');
+  if (raceDateInput) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    raceDateInput.min = tomorrow.toISOString().split('T')[0];
+  }
+}
+
+async function loadCurrentPlan() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/training-plans/${USER_ID}`);
+    const data = await response.json();
+    
+    console.log('📋 Loaded plans:', data);
+    
+    if (data.plans && data.plans.length > 0) {
+      currentPlan = data.plans[0]; // Get the most recent plan
+      showPlanDisplay();
+      displayPlanSummary(currentPlan);
+      displayWeekSchedule(currentPlan, currentPlanWeek);
+    } else {
+      showPlanForm();
+    }
+  } catch (error) {
+    console.error('Error loading plan:', error);
+    showPlanForm();
+  }
+}
+
+function showPlanDisplay() {
+  document.getElementById('currentPlanDisplay').style.display = 'block';
+  document.getElementById('createPlanForm').style.display = 'none';
+}
+
+function showPlanForm() {
+  document.getElementById('currentPlanDisplay').style.display = 'none';
+  document.getElementById('createPlanForm').style.display = 'block';
+}
+
+function displayPlanSummary(plan) {
+  const summaryDiv = document.getElementById('planSummary');
+  const titleEl = document.getElementById('planTitle');
+  
+  const raceDate = new Date(plan.goal_race_date);
+  const raceDateStr = raceDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  
+  titleEl.textContent = `${plan.goal_race_distance}K Training Plan`;
+  
+  const goalTime = plan.goal_time ? formatTime(plan.goal_time) : 'Not set';
+  const predictedTime = plan.predicted_time ? formatTime(plan.predicted_time) : 'Calculating...';
+  
+  summaryDiv.innerHTML = `
+    <div class="plan-stat-grid">
+      <div class="plan-stat">
+        <div class="plan-stat-label">Race Date</div>
+        <div class="plan-stat-value">${raceDateStr}</div>
+      </div>
+      <div class="plan-stat">
+        <div class="plan-stat-label">Distance</div>
+        <div class="plan-stat-value">${plan.goal_race_distance}<span class="plan-stat-unit">km</span></div>
+      </div>
+      <div class="plan-stat">
+        <div class="plan-stat-label">Goal Time</div>
+        <div class="plan-stat-value">${goalTime}</div>
+      </div>
+      <div class="plan-stat">
+        <div class="plan-stat-label">Predicted Time</div>
+        <div class="plan-stat-value">${predictedTime}</div>
+      </div>
+      <div class="plan-stat">
+        <div class="plan-stat-label">Training Days</div>
+        <div class="plan-stat-value">${plan.training_days_per_week}<span class="plan-stat-unit">per week</span></div>
+      </div>
+      <div class="plan-stat">
+        <div class="plan-stat-label">Current VDOT</div>
+        <div class="plan-stat-value">${plan.current_vdot ? plan.current_vdot.toFixed(1) : 'N/A'}</div>
+      </div>
+    </div>
+  `;
+}
+
+function displayWeekSchedule(plan, weekNumber) {
+  const scheduleDiv = document.getElementById('weekSchedule');
+  const weekNumberEl = document.getElementById('currentWeekNumber');
+  
+  if (!plan || !plan.schedule || plan.schedule.length === 0) {
+    scheduleDiv.innerHTML = '<p>No schedule data available</p>';
+    return;
+  }
+  
+  // Get workouts for this week
+  const weekWorkouts = plan.schedule.filter(w => w.week_number === weekNumber);
+  
+  weekNumberEl.textContent = `Week ${weekNumber} of ${plan.plan_duration_weeks}`;
+  
+  if (weekWorkouts.length === 0) {
+    scheduleDiv.innerHTML = '<p>No workouts scheduled for this week</p>';
+    return;
+  }
+  
+  scheduleDiv.innerHTML = weekWorkouts.map(workout => {
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayName = dayNames[workout.day_of_week];
+    
+    return `
+      <div class="workout-card">
+        <div class="workout-card-header">
+          <div class="workout-day">${dayName}</div>
+          <span class="workout-type ${workout.workout_type}">${workout.workout_type.replace('_', ' ')}</span>
+        </div>
+        <div class="workout-details">
+          ${workout.distance ? `
+            <div class="workout-detail-row">
+              <span class="workout-detail-label">Distance:</span>
+              <span class="workout-detail-value">${workout.distance.toFixed(1)} km</span>
+            </div>
+          ` : ''}
+          ${workout.target_pace ? `
+            <div class="workout-detail-row">
+              <span class="workout-detail-label">Target Pace:</span>
+              <span class="workout-detail-value">${formatPace(workout.target_pace)}/km</span>
+            </div>
+          ` : ''}
+          ${workout.intervals_json ? renderIntervals(workout.intervals_json) : ''}
+        </div>
+        ${workout.description ? `
+          <div class="workout-description">${workout.description}</div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderIntervals(intervalsJson) {
+  try {
+    const intervals = typeof intervalsJson === 'string' ? JSON.parse(intervalsJson) : intervalsJson;
+    return `
+      <div class="workout-detail-row">
+        <span class="workout-detail-label">Intervals:</span>
+        <span class="workout-detail-value">${intervals.repeats}x ${intervals.distance}km @ ${formatPace(intervals.pace)}/km</span>
+      </div>
+      <div class="workout-detail-row">
+        <span class="workout-detail-label">Recovery:</span>
+        <span class="workout-detail-value">${intervals.recovery}km easy</span>
+      </div>
+    `;
+  } catch (e) {
+    return '';
+  }
+}
+
+function formatTime(seconds) {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+  return `${minutes}:${String(secs).padStart(2, '0')}`;
+}
+
+function formatPace(secondsPerKm) {
+  const minutes = Math.floor(secondsPerKm / 60);
+  const seconds = Math.floor(secondsPerKm % 60);
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+async function handleCreatePlan(e) {
+  e.preventDefault();
+  
+  const resultDiv = document.getElementById('planFormResult');
+  resultDiv.textContent = 'Generating your training plan...';
+  resultDiv.className = 'form-result';
+  
+  // Collect form data
+  const raceDistance = parseFloat(document.getElementById('raceDistance').value);
+  const raceDate = document.getElementById('raceDate').value;
+  const currentMileage = parseFloat(document.getElementById('currentMileage').value);
+  const trainingDays = parseInt(document.getElementById('trainingDays').value);
+  const experienceLevel = document.getElementById('experienceLevel').value;
+  
+  // Optional goal time
+  const goalHours = parseInt(document.getElementById('goalHours').value) || 0;
+  const goalMinutes = parseInt(document.getElementById('goalMinutes').value) || 0;
+  const goalSeconds = parseInt(document.getElementById('goalSeconds').value) || 0;
+  const goalTime = (goalHours * 3600) + (goalMinutes * 60) + goalSeconds || null;
+  
+  // Optional recent race data
+  const recentDistance = parseFloat(document.getElementById('recentDistance').value) || null;
+  const recentHours = parseInt(document.getElementById('recentHours').value) || 0;
+  const recentMinutes = parseInt(document.getElementById('recentMinutes').value) || 0;
+  const recentSeconds = parseInt(document.getElementById('recentSeconds').value) || 0;
+  const recentTime = recentDistance ? (recentHours * 3600) + (recentMinutes * 60) + recentSeconds : null;
+  
+  const planData = {
+    user_id: USER_ID,
+    goal_race_distance: raceDistance,
+    goal_race_date: raceDate,
+    goal_time: goalTime,
+    current_weekly_mileage: currentMileage,
+    training_days_per_week: trainingDays,
+    experience_level: experienceLevel,
+    recent_race_distance: recentDistance,
+    recent_race_time: recentTime
+  };
+  
+  console.log('📤 Submitting plan data:', planData);
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/training-plans`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(planData)
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      resultDiv.textContent = '✅ Training plan generated successfully!';
+      resultDiv.className = 'form-result success';
+      
+      console.log('✅ Plan created:', data);
+      
+      // Reload the plan
+      setTimeout(() => {
+        loadCurrentPlan();
+      }, 1000);
+    } else {
+      throw new Error(data.error || 'Failed to create plan');
+    }
+  } catch (error) {
+    console.error('Error creating plan:', error);
+    resultDiv.textContent = `❌ Error: ${error.message}`;
+    resultDiv.className = 'form-result error';
+  }
+}
+
+async function handleDeletePlan() {
+  if (!confirm('Are you sure you want to delete this training plan?')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/training-plans/${currentPlan.id}`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      currentPlan = null;
+      currentPlanWeek = 1;
+      showPlanForm();
+      showMessage('Training plan deleted successfully', 'success');
+    } else {
+      throw new Error('Failed to delete plan');
+    }
+  } catch (error) {
+    console.error('Error deleting plan:', error);
+    showMessage('Failed to delete plan', 'error');
+  }
 }
 
 // Load today's nutrition summary
